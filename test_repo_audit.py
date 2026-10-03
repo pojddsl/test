@@ -24,11 +24,13 @@ class RepoAuditTests(unittest.TestCase):
 
     def test_detects_tracked_secret_but_ignores_untracked_file(self) -> None:
         root = self.make_repo()
+        aws_key = "AKIA" + "1234567890ABCDEF"
+        github_token = "ghp_" + "123456789012345678901234567890123456"
         (root / "config.py").write_text(
-            'API_KEY = "AKIA1234567890ABCDEF"\n', encoding="utf-8"
+            f'VALUE = "{aws_key}"\n', encoding="utf-8"
         )
         (root / "untracked.txt").write_text(
-            'TOKEN = "ghp_123456789012345678901234567890123456"\n',
+            f'VALUE = "{github_token}"\n',
             encoding="utf-8",
         )
         self.track(root, "config.py")
@@ -38,10 +40,11 @@ class RepoAuditTests(unittest.TestCase):
 
     def test_detects_private_key_and_skips_binary_file(self) -> None:
         root = self.make_repo()
+        private_key_marker = "-----BEGIN " + "OPENSSH PRIVATE KEY-----"
         (root / "key.txt").write_text(
-            "-----BEGIN OPENSSH PRIVATE KEY-----\n", encoding="utf-8"
+            private_key_marker + "\n", encoding="utf-8"
         )
-        (root / "image.bin").write_bytes(b"\0AKIA1234567890ABCDEF")
+        (root / "image.bin").write_bytes(b"\0" + b"AKIA" + b"1234567890ABCDEF")
         self.track(root, "key.txt", "image.bin")
 
         findings = scan_repo(root)
